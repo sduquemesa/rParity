@@ -1,0 +1,5 @@
+To get the project Makefile working properly you must set some environment variables first.
+Set:
+	PYTHIA8="pythia installation directory"
+	PYTHIA8DATA=$PYTHIA8/xmldoc
+	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PYTHIA8/lib
