@@ -1,40 +1,4 @@
-#include "stdio.h"
-
-// Math
-#include "math.h"
-
-// File operations
-#include <iostream>
-#include <fstream>
-
-// Pythia
-#include "Pythia.h"
-
-// FastJet
-#include "fastjet/PseudoJet.hh"
-#include "fastjet/ClusterSequence.hh"
-#include "fastjet/Selector.hh"
-
-/*
-|eta| < 2.1
-pT > 8 GeV/c
-
-Decay Lengths <= 100E-6 m (100E-3 mm)
-All candidate events originated on primary vertex
-
-Before e-mu trigger:
-  One electron with pT > 10 GeV/c
-  One muon with pT > 20 GeV/c
-Before mu-mu trigger:
-  One muon with pT > 15 GeV/c
-  One muon with pT > 10 GeV/c
-Before e-e trigger:
-  One muon with pT > 20 GeV/c
-  One muon with pT > 10 GeV/c
-
-Track Isolation:
-  I_{rel} < 0.15
- */
+#include "main.h" // include header file
 
 using namespace Pythia8;
 
@@ -69,8 +33,6 @@ bool ZVeto( Event &event, vector<int> iMu, vector<int> iMup, vector<int> iE, vec
 
   for ( unsigned int i = 0; i < iMu.size(); i++ ){
     for ( unsigned int j = 0; j < iMup.size(); j++ ){
-      // event.list();
-      // cout << m(event[iMu[i]], event[iMup[j]]) << " masa invariante " << iMu[i] << " " << iMup[j] << endl;getchar(); 
       if ( m(event[iMu[i]], event[iMup[j]]) > minMass && m(event[iMu[i]], event[iMup[j]]) < maxMass ) return true;
       }
   }
@@ -100,6 +62,9 @@ int main(int argc, char * argv[])
   vector<int> iEp;  // Antielectron event storage
   int pTelectrons[3];  // Count electrons with [0]: pT > 10 [1]: pT > 20 [2]: pT > 70
   int pTmuons[3];  // Count muons with [0]: pT > 10 [1]: pT > 15 [2]: pT > 20
+  double HT;
+  double ST;
+  double pTl; // pT isolated leptons
   
   Vec4 MET;
 
@@ -107,6 +72,7 @@ int main(int argc, char * argv[])
   Hist pTe("electron pT dist.", 100, 0, 300);
   Hist pTmu("muon pT dist.", 100, 0, 300);
   Hist pTt("total pT dist.", 100, 0, 300);
+  Hist sHist("S_{T} distribution", 100, 400, 10000);
  
   // Fastjet analysis - select algorithm and parameters
   double Rparam = 0.5;
@@ -142,6 +108,9 @@ int main(int argc, char * argv[])
     fjInputs.clear();
     pTelectrons[0] = 0; pTelectrons[1] = 0; pTelectrons[2] = 0; 
     pTmuons[0] = 0; pTmuons[1] = 0; pTmuons[2] = 0;
+    HT = 0;
+    ST = 0;
+    pTl = 0;
 
     // For the first event, print the FastJet details
     if (iEvent == 0) {
@@ -153,7 +122,7 @@ int main(int argc, char * argv[])
     //   pythia.process.list(); 
     //   pythia.event.list();
     // }
-    pythia.process.list();
+    // pythia.process.list();
 
     // int percent = static_cast<float>(iEvent)/static_cast<float>(nEvents)*100.0;
     // int nPace = max(1, nEvents / max(1, nShow) ); // 
@@ -169,8 +138,8 @@ int main(int argc, char * argv[])
       if ( pythia.event[i].pT() < 8.0 ) continue; // pT >= 8 GeV/c
       if ( abs( pythia.event[i].eta() ) >= 2.1 ) continue; // |eta| < 2.1
       if ( !(pythia.event[i].isFinal()) ) continue; // Only final particles i.e. status >= 0
-      if ( pythia.event[i].hasVertex() ) continue; // Particles originated at the primary vertex (origin) only
-      // if ( sqrt( pow(pythia.event[i].xProd(),2)+pow(pythia.event[i].yProd(),2)+pow(pythia.event[i].zProd(),2) ) > 100E-3 ) continue; // Decay lengths <= 100E-3 mm
+      // if ( pythia.event[i].hasVertex() ) continue; // Particles originated at the primary vertex (origin) only
+      if ( sqrt( pow(pythia.event[i].xProd(),2)+pow(pythia.event[i].yProd(),2)+pow(pythia.event[i].zProd(),2) ) > 100E-3 ) continue; // Decay lengths <= 100E-3 mm
 
       // MET
       if ( pythia.event[i].id() == 12 || pythia.event[i].id() == 14 || pythia.event[i].id() == 16 ){MET+=pythia.event[i].p(); continue;} // Neutrinos   
@@ -196,9 +165,9 @@ int main(int argc, char * argv[])
     }
 
     /* Z-veto */
-    if ( ZVeto(pythia.event,iMu, iMup, iE, iEp, 75., 105.) ) {cout<< "zveto"<<endl;count+=1;continue;} // Check for OSSF leptons with invariante mass in [75,105] GeV/c
+    if ( ZVeto(pythia.event,iMu, iMup, iE, iEp, 75., 105.) ) {/*cout<< "zveto"<<endl;count+=1;*/continue;} // Check for OSSF leptons with invariante mass in [75,105] GeV/c
 
-    cout << iMu.size() << " " << iE.size()<< endl;
+    // cout << iMu.size() << " " << iE.size()<< endl;
 
     /* === e-mu trigger === */
     if ( iE.size() > 0 && iMu.size() > 0 ) {
@@ -211,6 +180,7 @@ int main(int argc, char * argv[])
       
       for ( unsigned int i = 0; i < iMu.size(); i++ ) {pTmu.fill(pythia.event[iMu[i]].pT()); file << pythia.event[iMu[i]].pT() << endl;}
       for ( unsigned int i = 0; i < iE.size(); i++ ) {pTe.fill(pythia.event[iE[i]].pT()); file1 << pythia.event[iE[i]].pT() << endl;}
+      goto jets;
     }
 
     /* === e-e trigger === */
@@ -219,34 +189,33 @@ int main(int argc, char * argv[])
       if ( pTelectrons[1] < 1 ) continue; // at least one mu with pT > 20 GeV/c
       if ( pTelectrons[0] < 1 ) continue; // at least one mu with pT > 10 GeV/c
       if ( !( isIsolated( pythia.event, iMu, 0.3 ) ) ) continue; // Check isolation of tagged muons (R<0.3) 
-      // cout << "e-e" << endl; getchar(); 
 
       for ( unsigned int i = 0; i < iE.size(); i++ ) {pTe.fill(pythia.event[iE[i]].pT()); file1 << pythia.event[iE[i]].pT() << endl;}
+      goto jets;
     }
 
     /* === mu-mu trigger === */
-    else if ( iMu.size() > 1 ) {
+    if ( iMu.size() > 1 ) {
      
       if ( pTmuons[1] < 1 ) continue; // at least one mu with pT > 15 GeV/c
       if ( pTmuons[0] < 1 ) continue; // at least one mu with pT > 10 GeV/c
       if ( !( isIsolated( pythia.event, iMu, 0.3 ) ) ) continue; // Check isolation of tagged muons (R<0.3)
-      // cout << "mu-mu" << endl; getchar();
 
       for ( unsigned int i = 0; i < iMu.size(); i++ ) {pTmu.fill(pythia.event[iMu[i]].pT()); file << pythia.event[iMu[i]].pT() << endl;}
+      goto jets;
     }
 
     /* === single lepton trigger === */
-    else if ( iE.size() == 1 && iMu.size() == 0 ){ // Single electron
+    if ( iE.size() == 1 && iMu.size() == 0 ){ // Single electron
       if ( pTelectrons[2] < 1 ) continue;
-      // cout << "single e" << endl; getchar();
+      pTe.fill(pythia.event[iE[0]].pT()); file1 << pythia.event[iE[0]].pT() << endl;
     }
-    else if ( iMu.size() == 1 && iE.size() == 0 ){ // Single muon
+    if ( iMu.size() == 1 && iE.size() == 0 ){ // Single muon
       if ( pTelectrons[2] < 1 ) continue;
-      // cout << "single mu" << endl; getchar();
+      pTmu.fill(pythia.event[iMu[0]].pT()); file << pythia.event[iMu[0]].pT() << endl;
     }
     
-    else {getchar();continue;}
-
+  jets:
 
     // Run Fastjet algorithm 
     vector <fastjet::PseudoJet> jets;
@@ -255,14 +224,19 @@ int main(int argc, char * argv[])
     // Extract jets
     jets = clustSeq.inclusive_jets();
   
-    // Apply cuts
+    // Apply jets cuts
     fastjet::Selector select_ET = fastjet::SelectorEtMin(40.0);
     fastjet::Selector select_eta = fastjet::SelectorEtaMax(2.5);
     jets = select_ET(jets);
     jets = select_eta(jets);
     jets = sorted_by_E(jets);
 
-    // cout << jets.size() << endl; getchar();
+    for ( unsigned int i = 0; i < jets.size(); i++ ) HT += jets[i].perp();
+    // for ( unsigned int i = 0; i < iE.size(); i++ ) pTl += pythia.event[iE[i]].pT();
+    // for ( unsigned int i = 0; i < iMu.size(); i++ ) pTl += pythia.event[iMu[i]].pT();
+    ST = HT + pTl + MET.pT();
+    cout << ST << endl; count += 1;
+    sHist.fill(ST);
 
   } // End event loop
 
@@ -272,7 +246,7 @@ int main(int argc, char * argv[])
   // pTt += pTmu;
   // pTt += pTe;
   // cout << pTe << endl << pTmu << pTt << endl;
-
+  cout << sHist << endl;
 
   cout << "z-veto " << count << endl;
   return 0; // End main program with error-free return
