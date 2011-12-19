@@ -3,3 +3,7 @@ Set:
 	PYTHIA8="pythia installation directory"
 	PYTHIA8DATA=$PYTHIA8/xmldoc
 	LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PYTHIA8/lib
+
+if you use MAC OSX replace the last line by
+
+	DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$PYTHIA8/lib
