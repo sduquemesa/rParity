@@ -3,7 +3,7 @@
 ! Settings that could be used in a main program, if desired.
 Main:numberOfEvents = 1000         ! number of events to generate
 Main:numberToList = 1              ! number of events to print
-Main:timesToShow = 20              ! show how far along run is this many times
+Main:timesToShow = 100              ! show how far along run is this many times
 
 ! Beam parameter settings. Values below agree with default ones.
 Beams:idA = 2212                      ! first beam, p = 2212, pbar = -2212

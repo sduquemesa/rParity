@@ -116,16 +116,16 @@ int main(int argc, char * argv[])
     pTl = 0;
 
     if ( !pythia.next() ) continue;
-    // if ( iEvent < nList ){ // Event listing
-    //   pythia.process.list(); 
-    //   pythia.event.list();
-    // }
+    if ( iEvent < nList ){ // Event listing
+      pythia.process.list(); 
+      pythia.event.list();
+    }
     //pythia.process.list();
     // pythia.event.list();
 
     int percent = static_cast<float>(iEvent)/static_cast<float>(nEvents)*100.0;
     int nPace = max(1, nEvents / max(1, nShow) ); // 
-    if (nShow > 0 && iEvent%nPace == 0) printf(" Genarating Event %u of %u\t %u%% completed\n",iEvent,nEvents,percent);
+    if (nShow > 0 && iEvent%nPace == 0) {printf(" Genarating Event %u of %u\t %u%% completed\n",iEvent,nEvents,percent);}
     
     for ( int i = 0; i < pythia.event.size(); ++i ){ // Particle loop
 
@@ -251,8 +251,8 @@ int main(int argc, char * argv[])
       // Isolated leptons pT sum
       for ( unsigned int i = 0; i < iE.size(); i++ ) pTl += pythia.event[iE[i]].pT();
       for ( unsigned int i = 0; i < iMu.size(); i++ ) pTl += pythia.event[iMu[i]].pT();
-      //      for ( unsigned int i = 0; i < iEp.size(); i++ ) pTl += pythia.event[iEp[i]].pT();
-      //      for ( unsigned int i = 0; i < iMup.size(); i++ ) pTl += pythia.event[iMup[i]].pT();
+      for ( unsigned int i = 0; i < iEp.size(); i++ ) pTl += pythia.event[iEp[i]].pT();
+      for ( unsigned int i = 0; i < iMup.size(); i++ ) pTl += pythia.event[iMup[i]].pT();
       ST = HT + pTl + MET.pT();
       sHist.fill(ST);
       file << ST << endl;
@@ -297,8 +297,13 @@ int main(int argc, char * argv[])
   // pTt += pTe;
   // cout << pTe << endl << pTmu << pTt << endl;
   // cout << sHist << endl;
-  cout << "Counts\n" << DY13[0] << "  "  << DY13[1] << "  "  << DY13[2] << endl;
-  cout << "Counts\n" << DY13Z[0] << "  "  << DY13Z[1] << "  "  << DY13Z[2] << endl;
+  cout << endl << endl << "====== Events Recolected ======" << endl << endl;
+  cout << 3 << " (DY1,ZV) ST(High) " << DY13Z[2] << endl;
+  cout << 3 << " (DY1) ST(High) " << DY13[2] << endl;
+  cout << 3 << " (DY1,ZV) ST(Mid) " << DY13Z[1] << endl;
+  cout << 3 << " (DY1) ST(Mid) " << DY13[1] << endl;
+  cout << 3 << " (DY1,ZV) ST(Low) " << DY13Z[0] << endl;
+  cout << 3 << " (DY1) ST(Low) " << DY13[0] << endl;
 
   return 0; // End main program with error-free return
   
