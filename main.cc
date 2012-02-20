@@ -48,8 +48,9 @@ int main(int argc, char * argv[])
 {
 
   // Define Variables
-  ofstream file;
+  ofstream file, file2;
   file.open("s.data");
+  file2.open("met.data");
 
   int DY13[] = {0,0,0}; // ST low, mid, high
   int DY13Z[] = {0,0,0}; // ST low, mid, high with Zveto
@@ -69,10 +70,7 @@ int main(int argc, char * argv[])
   bool trigger;
 
   // Handful Histograms
-  Hist pTe("electron pT dist.", 100, 0, 300);
-  Hist pTmu("muon pT dist.", 100, 0, 300);
-  Hist pTt("total pT dist.", 100, 0, 300);
-  Hist sHist("S_{T} distribution", 100, 400, 10000);
+  Hist sHist("S_{T} distribution", 40, 400, 2000);
  
   // Fastjet analysis - select algorithm and parameters
   double Rparam = 0.5;
@@ -163,12 +161,6 @@ int main(int argc, char * argv[])
 
     }
 
-    /* Z-veto */
-    //    if ( ZVeto(pythia.event,iMu, iMup, iE, iEp, 75., 105.) ) {continue;} // Check for OSSF leptons with invariante mass in [75,105] GeV/c
-
-    // cout << "Event " << iEvent << " Mu-Mup: " << iMu.size() << " " << iMup.size()  << "\tE-Ep: " << iE.size() << " " << iEp.size() << endl;
-    // getchar();
-
     /* === e-mu trigger === */
     if ( iE.size() > 0 && iMu.size() > 0 ) {
 
@@ -179,8 +171,7 @@ int main(int argc, char * argv[])
 	   ){
 	trigger = true;
       }
-     
-      // goto jets;
+
     }
 
     /* === e-e trigger === */
@@ -192,7 +183,7 @@ int main(int argc, char * argv[])
 	   ){
 	trigger = true;
       }
-      // goto jets;
+
     }
 
     /* === mu-mu trigger === */
@@ -204,7 +195,7 @@ int main(int argc, char * argv[])
 	   ){
 	trigger = true;
       }
-      // goto jets;
+
     }
 
     /* === single lepton trigger === */
@@ -248,6 +239,9 @@ int main(int argc, char * argv[])
 
       for ( unsigned int i = 0; i < jets.size(); i++ ) HT += jets[i].perp();
 
+      Vec4 leptons;
+      leptons.reset();
+
       // Isolated leptons pT sum
       for ( unsigned int i = 0; i < iE.size(); i++ ) pTl += pythia.event[iE[i]].pT();
       for ( unsigned int i = 0; i < iMu.size(); i++ ) pTl += pythia.event[iMu[i]].pT();
@@ -256,47 +250,47 @@ int main(int argc, char * argv[])
       ST = HT + pTl + MET.pT();
       sHist.fill(ST);
       file << ST << endl;
+      file2 << MET.pT() << endl;
 
       if ( ST < 300 ) { // ST low
-	if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1) ST(low)" << endl; DY13[0] +=1;}
-	if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1) ST(low)" << endl; DY13[0] +=1;}
+      	if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1) ST(low)" << endl; DY13[0] +=1;}
+      	if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1) ST(low)" << endl; DY13[0] +=1;}
       }  
       if ( 300 <= ST && ST < 600 ) { // ST mid
-	if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1) ST(mid)" << endl; DY13[1] +=1;}
-	if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1) ST(mid)" << endl; DY13[1] +=1;}
+      	if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1) ST(mid)" << endl; DY13[1] +=1;}
+      	if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1) ST(mid)" << endl; DY13[1] +=1;}
       }   
       if ( 600 <= ST ) { // ST high
-	if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1) ST(high)" << endl; DY13[2] +=1;}
-	if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1) ST(high)" << endl; DY13[2] +=1;}
+      	if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1) ST(high)" << endl; DY13[2] +=1;}
+      	if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1) ST(high)" << endl; DY13[2] +=1;}
       }   
 
       if ( !(ZVeto(pythia.event,iMu, iMup, iE, iEp, 75., 105.)) ){ // Check for OSSF leptons with invariante mass outside of [75,105] GeV/c
 
-	if ( ST < 300 ) { // ST low
-	  if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(low)" << endl; DY13Z[0] +=1;}
-	  if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(low)" << endl; DY13Z[0] +=1;}
-	}  
-	if ( 300 <= ST && ST < 600 ) { // ST mid
-	  if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(mid)" << endl; DY13Z[1] +=1;}
-	  if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(mid)" << endl; DY13Z[1] +=1;}
-	}   
-	if ( 600 <= ST ) { // ST high
-	  if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(high)" << endl; DY13Z[2] +=1;}
-	  if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(high)" << endl; DY13Z[2] +=1;}
-	}   
-
+      	if ( ST < 300 ) { // ST low
+      	  if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(low)" << endl; DY13Z[0] +=1;}
+      	  if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(low)" << endl; DY13Z[0] +=1;}
+      	}  
+      	if ( 300 <= ST && ST < 600 ) { // ST mid
+      	  if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(mid)" << endl; DY13Z[1] +=1;}
+      	  if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(mid)" << endl; DY13Z[1] +=1;}
+      	}   
+      	if ( 600 <= ST ) { // ST high
+      	  if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(high)" << endl; DY13Z[2] +=1;}
+      	  if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(high)" << endl; DY13Z[2] +=1;}
+      	}
+	
+	
       } 
-
+      
     } // End trigger if
-
+    
   } // End event loop
-
-  file.close();
   
-  // pTt += pTmu;
-  // pTt += pTe;
-  // cout << pTe << endl << pTmu << pTt << endl;
-  // cout << sHist << endl;
+  file.close();
+  file2.close();
+ 
+  cout << sHist << endl;
   cout << endl << endl << "====== Events Recolected ======" << endl << endl;
   cout << 3 << " (DY1,ZV) ST(High) " << DY13Z[2] << endl;
   cout << 3 << " (DY1) ST(High) " << DY13[2] << endl;
