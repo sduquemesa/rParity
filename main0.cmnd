@@ -16,9 +16,6 @@ SLHA:useDecayTable = on		      ! Read SLHA decay table from file
 
 ! Process selection 
 SUSY:all = on			      ! Switches on ALL (~400) SUSY processes
-#WeakDoubleBoson:ffbar2gmZgmZ = on
-#23:onMode = off
-#23:onIfAny = 11 13 
 
 ! Settings for the event generation process in the Pythia8 library.
 PartonLevel:MI = off                   ! no multiple interactions
