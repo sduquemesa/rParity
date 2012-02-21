@@ -47,13 +47,11 @@ bool ZVeto( Event &event, vector<int> iMu, vector<int> iMup, vector<int> iE, vec
 int main(int argc, char * argv[])
 {
 
-  // Define Variables
-  ofstream file, file2;
+  /*==================== Definitions, Variables and Set Up ====================*/
+
+  ofstream file, file2; // Files to write the data output
   file.open("s.data");
   file2.open("met.data");
-
-  int DY13[] = {0,0,0}; // ST low, mid, high
-  int DY13Z[] = {0,0,0}; // ST low, mid, high with Zveto
 
   vector<int> iMu; // Muon event storage
   vector<int> iE;  // Electron event storage
@@ -67,17 +65,18 @@ int main(int argc, char * argv[])
   
   Vec4 MET; // 4-vector for missing energy
 
-  bool trigger;
+  bool trigger; // Flag for trigger evaluation
 
-  // Handful Histograms
+  // Preview Histogram on pythia output of sT distribution
   Hist sHist("S_{T} distribution", 40, 400, 2000);
  
   // Fastjet analysis - select algorithm and parameters
-  double Rparam = 0.5;
+  double Rparam = 0.5;  // Cone radii
   fastjet::Strategy               strategy = fastjet::Best;
-  fastjet::RecombinationScheme    recombScheme = fastjet::E_scheme;
+  fastjet::RecombinationScheme    recombScheme = fastjet::E_scheme; // Recombination Scheme
   fastjet::JetDefinition          *jetDef = NULL;
-  jetDef = new fastjet::JetDefinition(fastjet::kt_algorithm, Rparam,
+  jetDef = new fastjet::JetDefinition(fastjet::kt_algorithm, // Jet Algorithm Select
+				      Rparam,
                                       recombScheme, strategy);
 
   // Fastjet input
@@ -97,7 +96,9 @@ int main(int argc, char * argv[])
   int nList = pythia.mode("Main:numberToList");
   int nShow = pythia.mode("Main:timesToShow");
   
-  for ( int iEvent = 0; iEvent < nEvents; iEvent++ ) { // Event loop
+  /*==================== Event Generation ====================*/
+
+  for ( int iEvent = 0; iEvent < nEvents; iEvent++ ) {  // Pythia Event Generation loop
     
     // Reset variables in the new event
     trigger = false;
@@ -113,19 +114,18 @@ int main(int argc, char * argv[])
     ST = 0;
     pTl = 0;
 
-    if ( !pythia.next() ) continue;
+    if ( !pythia.next() ) continue;  // Generates a new event
     if ( iEvent < nList ){ // Event listing
       pythia.process.list(); 
       pythia.event.list();
     }
-    //pythia.process.list();
-    // pythia.event.list();
 
+    // Show the percentage of events completed
     int percent = static_cast<float>(iEvent)/static_cast<float>(nEvents)*100.0;
     int nPace = max(1, nEvents / max(1, nShow) ); // 
     if (nShow > 0 && iEvent%nPace == 0) {printf(" Genarating Event %u of %u\t %u%% completed\n",iEvent,nEvents,percent);}
     
-    for ( int i = 0; i < pythia.event.size(); ++i ){ // Particle loop
+    for ( int i = 0; i < pythia.event.size(); ++i ){ // Particle loop and analysis
 
       if ( pythia.event[i].id() == -13 ) iMup.push_back(i); // Tag antimuons
       if ( pythia.event[i].id() == -11 ) iEp.push_back(i); // Tag positrons
@@ -135,10 +135,10 @@ int main(int argc, char * argv[])
       if ( pythia.event[i].pT() < 8.0 ) continue; // pT >= 8 GeV/c
       if ( abs( pythia.event[i].eta() ) >= 2.1 ) continue; // |eta| < 2.1
       if ( !(pythia.event[i].isFinal()) ) continue; // Only final particles i.e. status >= 0
-      // if ( pythia.event[i].hasVertex() ) continue; // Particles originated at the primary vertex (origin) only
-      if ( sqrt( pow(pythia.event[i].xProd(),2)+pow(pythia.event[i].yProd(),2)+pow(pythia.event[i].zProd(),2) ) > 100E-3 ) continue; // Decay lengths <= 100E-3 mm
+      if ( pythia.event[i].hasVertex() ) continue; // Particles originated at the primary vertex (origin) only
+      // if ( sqrt( pow(pythia.event[i].xProd(),2)+pow(pythia.event[i].yProd(),2)+pow(pythia.event[i].zProd(),2) ) > 100E-3 ) continue; // Decay lengths <= 100E-3 mm
 
-      // MET
+      // Tag and discard missing energy particles
       if ( pythia.event[i].id() == 12 || pythia.event[i].id() == 14 || pythia.event[i].id() == 16 ){MET+=pythia.event[i].p(); continue;} // Neutrinos   
       if ( pythia.event[i].id() == 1000039 ){MET+=pythia.event[i].p(); continue;} // Gravitinos
       
@@ -156,10 +156,12 @@ int main(int argc, char * argv[])
 	if ( pythia.event[i].pT() > 10 ){ pTmuons[0] += 1; continue; }
       }
 
-      // Store as input to Fastjet
+      // Store particle as an input to Fastjet
       fjInputs.push_back( fastjet::PseudoJet (pythia.event[i].px(), pythia.event[i].py(), pythia.event[i].pz(), pythia.event[i].e() ) );
 
     }
+
+    /*==================== Trigger Analysis and Selection ====================*/
 
     /* === e-mu trigger === */
     if ( iE.size() > 0 && iMu.size() > 0 ) {
@@ -169,7 +171,7 @@ int main(int argc, char * argv[])
 	   isIsolated( pythia.event, iE, 0.4 ) && // Check isolation of tagged electrons (R<0.4)
 	   isIsolated( pythia.event, iMu, 0.3 ) // Check isolation of tagged muons (R<0.3)
 	   ){
-	trigger = true;
+	trigger = true; // Set flag if the event pass the trigger
       }
 
     }
@@ -181,7 +183,7 @@ int main(int argc, char * argv[])
 	   pTelectrons[0] > 0 && // at least one e with pT > 10 GeV/c
 	   isIsolated( pythia.event, iE, 0.4 ) // Check isolation of tagged electrons (R<0.4)
 	   ){
-	trigger = true;
+	trigger = true; // Set flag if the event pass the trigger
       }
 
     }
@@ -193,7 +195,7 @@ int main(int argc, char * argv[])
 	   pTmuons[0] > 0 && // at least one e with pT > 10 GeV/c
 	   isIsolated( pythia.event, iMu, 0.3 ) // Check isolation of tagged electrons (R<0.4)
 	   ){
-	trigger = true;
+	trigger = true; // Set flag if the event pass the trigger
       }
 
     }
@@ -203,7 +205,7 @@ int main(int argc, char * argv[])
       if ( pTelectrons[2] > 0 && // at least one e with pT > 70 GeV/c
 	   isIsolated( pythia.event, iE, 0.4 ) // Check isolation of tagged electrons (R<0.4)
 	   ){
-	trigger = true;
+	trigger = true; // Set flag if the event pass the trigger
       }
 
     }
@@ -211,7 +213,7 @@ int main(int argc, char * argv[])
       if ( pTmuons[2] > 0 && // at least one e with pT > 20 GeV/c
 	   isIsolated( pythia.event, iMu, 0.3 ) // Check isolation of tagged muons (R<0.3)
 	   ){
-	trigger = true;
+	trigger = true; // Set flag if the event pass the trigger
       }
 
     }
@@ -220,85 +222,47 @@ int main(int argc, char * argv[])
     
       // Run Fastjet algorithm 
       vector <fastjet::PseudoJet> jets;
-      fastjet::ClusterSequence clustSeq(fjInputs, *jetDef); // Run clustering
+      fastjet::ClusterSequence clustSeq(fjInputs, *jetDef); // Run clustering agorithm of fastjet
       
       // For the first event, print the FastJet details
       if (iEvent == 0) {
 	cout << "\nRan " << jetDef->description() << endl << endl;
       }
     
-      // Extract jets
-      jets = clustSeq.inclusive_jets();
+      jets = clustSeq.inclusive_jets(); // Extract jets
     
-      // Apply jets cuts
-      fastjet::Selector select_ET = fastjet::SelectorEtMin(40.0);
-      fastjet::Selector select_eta = fastjet::SelectorEtaMax(2.5);
-      jets = select_ET(jets);
-      jets = select_eta(jets);
-      jets = sorted_by_E(jets);
-
-      for ( unsigned int i = 0; i < jets.size(); i++ ) HT += jets[i].perp();
-
-      Vec4 leptons;
-      leptons.reset();
+      // Apply cuts on jets
+      fastjet::Selector select_ET = fastjet::SelectorEtMin(40.0); // Jet E_T > 40 GeV
+      fastjet::Selector select_eta = fastjet::SelectorEtaMax(2.5); // eta < 2.5
+      jets = select_ET(jets); // Apply E_T cut on jets
+      jets = select_eta(jets); // Apply E_T cut on jets
+      jets = sorted_by_E(jets); // Sort jets by Energy
+      
+      for ( unsigned int i = 1; i < 3; i++ ) HT += jets[i].perp(); // $H_T = \sum_{i=2}^{4} p_{T,i} + E_T^{miss}$
 
       // Isolated leptons pT sum
       for ( unsigned int i = 0; i < iE.size(); i++ ) pTl += pythia.event[iE[i]].pT();
       for ( unsigned int i = 0; i < iMu.size(); i++ ) pTl += pythia.event[iMu[i]].pT();
       for ( unsigned int i = 0; i < iEp.size(); i++ ) pTl += pythia.event[iEp[i]].pT();
       for ( unsigned int i = 0; i < iMup.size(); i++ ) pTl += pythia.event[iMup[i]].pT();
-      ST = HT + pTl + MET.pT();
-      sHist.fill(ST);
-      file << ST << endl;
-      file2 << MET.pT() << endl;
-
-      if ( ST < 300 ) { // ST low
-      	if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1) ST(low)" << endl; DY13[0] +=1;}
-      	if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1) ST(low)" << endl; DY13[0] +=1;}
-      }  
-      if ( 300 <= ST && ST < 600 ) { // ST mid
-      	if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1) ST(mid)" << endl; DY13[1] +=1;}
-      	if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1) ST(mid)" << endl; DY13[1] +=1;}
-      }   
-      if ( 600 <= ST ) { // ST high
-      	if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1) ST(high)" << endl; DY13[2] +=1;}
-      	if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1) ST(high)" << endl; DY13[2] +=1;}
-      }   
-
-      if ( !(ZVeto(pythia.event,iMu, iMup, iE, iEp, 75., 105.)) ){ // Check for OSSF leptons with invariante mass outside of [75,105] GeV/c
-
-      	if ( ST < 300 ) { // ST low
-      	  if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(low)" << endl; DY13Z[0] +=1;}
-      	  if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(low)" << endl; DY13Z[0] +=1;}
-      	}  
-      	if ( 300 <= ST && ST < 600 ) { // ST mid
-      	  if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(mid)" << endl; DY13Z[1] +=1;}
-      	  if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(mid)" << endl; DY13Z[1] +=1;}
-      	}   
-      	if ( 600 <= ST ) { // ST high
-      	  if ( iE.size() == 1 && iEp.size() == 1 && ( iMup.size() == 1 ^ iMu.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(high)" << endl; DY13Z[2] +=1;}
-      	  if ( iMu.size() == 1 && iMup.size() == 1 && ( iEp.size() == 1 ^ iE.size() == 1 ) ) {cout << 3 << " (DY1,ZV) ST(high)" << endl; DY13Z[2] +=1;}
-      	}
-	
-	
-      } 
       
-    } // End trigger if
-    
+      ST = HT + pTl + MET.pT(); // S_T calculation. S_T is the scalar sum of E_T^{miss}, H_T, and the p_T of all isolated leptons
+      sHist.fill(ST); // Fill the output histogram
+      file << ST << endl; // Write ST data to file
+      file2 << MET.pT() << endl; // Write MET data to file
+      
+      
+      
+    } // End trigger post-analysis if
+  
   } // End event loop
   
-  file.close();
+  // Close output files
+  file.close(); 
   file2.close();
- 
-  cout << sHist << endl;
-  cout << endl << endl << "====== Events Recolected ======" << endl << endl;
-  cout << 3 << " (DY1,ZV) ST(High) " << DY13Z[2] << endl;
-  cout << 3 << " (DY1) ST(High) " << DY13[2] << endl;
-  cout << 3 << " (DY1,ZV) ST(Mid) " << DY13Z[1] << endl;
-  cout << 3 << " (DY1) ST(Mid) " << DY13[1] << endl;
-  cout << 3 << " (DY1,ZV) ST(Low) " << DY13Z[0] << endl;
-  cout << 3 << " (DY1) ST(Low) " << DY13[0] << endl;
-
+  
+  cout << sHist << endl; // Print out histogram
+  
   return 0; // End main program with error-free return
   
 }
